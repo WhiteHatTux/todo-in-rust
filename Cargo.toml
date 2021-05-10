@@ -10,7 +10,9 @@ edition = "2018"
 tide = "0.16.0"
 async-std = { version = "1.8.0", features = ["attributes"] }
 serde = { version = "1.0", features = ["derive"] }
-refinery = { version = "0.5", features = ["rusqlite"]}
-rusqlite = {version = "0.23.0", features = ["bundled", "uuid"]}
+rusqlite = { version = "0.23.0", features = ["bundled", "uuid"] }
 barrel = { version = "0.6", features = ["sqlite3"] }
 uuid = { version = "0.8.2", features = ["serde", "v4"] }
+diesel = { version = "1.4.6", features = ["sqlite", "uuidv07"] }
+diesel_migrations = "1.4.0"
+dotenv = "0.15.0"
