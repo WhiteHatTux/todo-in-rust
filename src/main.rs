@@ -1,6 +1,9 @@
 extern crate diesel;
+#[macro_use]
+extern crate diesel_migrations;
 
 use diesel::prelude::*;
+use diesel_migrations::embed_migrations;
 use tide::{Body, Request, Response};
 use tide::prelude::*;
 use uuid::Uuid;
@@ -20,9 +23,11 @@ struct NewRequestTodo {
     content: String,
 }
 
-
+embed_migrations!();
 #[async_std::main]
 async fn main() -> tide::Result<()> {
+    let conn = establish_connection();
+    embedded_migrations::run(&conn);
     let mut app = tide::new();
     app.at("/todo").post(add_todo);
     app.at("/todo/:uuid").get(get_todo);
