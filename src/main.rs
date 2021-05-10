@@ -1,6 +1,6 @@
 use rusqlite::{Connection, params};
 use tide::prelude::*;
-use tide::Request;
+use tide::{Request, Response, Body};
 use uuid::Uuid;
 
 mod migrations;
@@ -12,19 +12,14 @@ struct NewTodo {
     present: bool,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone, Serialize)]
 struct Todo {
     id: Uuid,
     title: String,
     content: String,
 }
 
-#[derive(Deserialize)]
-struct QueryParameters {
-    uuid: Uuid,
-}
-
-#[derive(Debug)]
+#[derive(Debug, Serialize)]
 struct Todolist {
     todos: Vec<Todo>,
 }
@@ -36,7 +31,7 @@ async fn main() -> tide::Result<()> {
     migrations::runner().run(&mut conn).unwrap();
     let mut app = tide::new();
     app.at("/todo").post(add_todo);
-    app.at("/todo/{uuid}").get(get_todo);
+    app.at("/todo/:uuid").get(get_todo);
     app.at("/todos").get(get_all_todos);
     // Missing error handling if anything fails during the processing
     app.listen("127.0.0.1:8083").await?;
@@ -53,17 +48,20 @@ async fn get_all_todos(_req: Request<()>) -> tide::Result {
             content: row.get(2)?,
         })
     })?;
-    let mut complete_string = "".to_owned();
+    let mut todo_list = Todolist {
+        todos: vec![],
+    };
     existing_todos.for_each(|todo| {
-        complete_string.push_str(todo.unwrap().id.to_string().as_ref());
+        todo_list.todos.push(todo.unwrap());
     });
-    Ok(format!("found bunch of ids {}", complete_string).into())
+    let mut response = Response::new(200);
+    response.set_body(Body::from_json(&todo_list)?);
+    Ok(response)
 }
 
 async fn get_todo(req: Request<()>) -> tide::Result {
-    let todo_uuid_real: QueryParameters = req.query()?;
+    let todo_uuid = Uuid::parse_str(req.param("uuid").unwrap_or("failed"))?;
 
-    let todo_uuid = todo_uuid_real.uuid;
     let conn = Connection::open("test.db")?;
     let mut stmt = conn.prepare("select id, title, content from todo where id = (?1)")?;
     let mut found_todos = stmt.query_map(params![todo_uuid], |row| {
