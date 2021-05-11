@@ -27,7 +27,6 @@ or you can just query all todos
 
 This list is way too long to include everything, but on the close roadmap (no priority) we have:
 
-- use r2d2 for connection pooling
 - return+accept protobuf in the api
 - Nice parametrization with config file or command parameters (http port etc.) - dotenv might do?
 - authentication for different users

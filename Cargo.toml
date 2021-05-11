@@ -13,6 +13,6 @@ serde = { version = "1.0", features = ["derive"] }
 rusqlite = { version = "0.23.0", features = ["bundled", "uuid"] }
 barrel = { version = "0.6", features = ["sqlite3"] }
 uuid = { version = "0.8.2", features = ["serde", "v4"] }
-diesel = { version = "1.4.6", features = ["sqlite", "uuidv07"] }
+diesel = { version = "1.4.6", features = ["sqlite", "uuidv07", "r2d2"] }
 diesel_migrations = "1.4.0"
 dotenv = "0.15.0"
