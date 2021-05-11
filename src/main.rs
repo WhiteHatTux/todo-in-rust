@@ -43,7 +43,13 @@ async fn main() -> tide::Result<()> {
     app.at("/todo/:uuid").get(get_todo);
     app.at("/todos").get(get_all_todos);
     // Missing error handling if anything fails during the processing
-    app.listen("127.0.0.1:8083").await?;
+    dotenv().ok();
+    app.listen(
+        env::var("HOST").expect("HOST must be set")
+            + ":"
+            + env::var("PORT").expect("PORT must be set").as_str(),
+    )
+    .await?;
     Ok(())
 }
 
