@@ -9,7 +9,7 @@ use diesel::r2d2::{ConnectionManager, Pool, PooledConnection};
 use diesel_migrations::embed_migrations;
 use dotenv::dotenv;
 use tide::prelude::*;
-use tide::{Body, Request, Response};
+use tide::{Body, Error, Request, Response};
 use uuid::Uuid;
 
 use todo_in_rust_with_tide::models::Todo;
@@ -86,8 +86,22 @@ fn get_connection_from_state(
     req.state().pool.get().unwrap()
 }
 
+fn print_and_get_error_message(error_message: String) -> tide::Result {
+    println!(
+        "Processing of request finished with error >{}<",
+        &error_message
+    );
+    Ok(Response::from(Error::from_str(400, error_message)).into())
+}
+
 async fn get_todo(req: Request<State>) -> tide::Result {
-    let todo_uuid = Uuid::parse_str(req.param("uuid").unwrap_or("failed"))?;
+    let todo_uuid = match req.param("uuid") {
+        Ok(uuid_str) => match Uuid::parse_str(uuid_str) {
+            Ok(uuid) => uuid,
+            Err(_) => return print_and_get_error_message("uuid could not be parsed".to_owned()),
+        },
+        Err(_) => return print_and_get_error_message("missing uuid path variable".to_owned()),
+    };
 
     let conn = get_connection_from_state(req);
     let found_todos = todos
@@ -105,7 +119,10 @@ async fn get_todo(req: Request<State>) -> tide::Result {
 
 async fn add_todo(mut req: Request<State>) -> tide::Result {
     use todo_in_rust_with_tide::schema::todos;
-    let NewRequestTodo { title, content } = req.body_json().await?;
+    let NewRequestTodo { title, content } = match req.body_json().await {
+        Ok(result) => result,
+        Err(error) => return print_and_get_error_message(error.to_string()),
+    };
     let conn = get_connection_from_state(req);
 
     let new_uuid_for_todo = Uuid::new_v4();
@@ -115,9 +132,12 @@ async fn add_todo(mut req: Request<State>) -> tide::Result {
         content: Option::from(content),
     };
 
-    diesel::insert_into(todos::table)
+    match diesel::insert_into(todos::table)
         .values(&new_todo)
         .execute(&conn)
-        .expect("Error saving new todo");
+    {
+        Ok(result) => println!("{} todo(s) inserted successfully", result),
+        Err(err) => return print_and_get_error_message(err.to_string()),
+    };
     return Ok(format!("{}\n", new_uuid_for_todo).into());
 }
