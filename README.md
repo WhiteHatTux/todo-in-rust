@@ -4,9 +4,8 @@ This simple app was created to try out rust and get comfortable with all its fea
 
 # Usage 
 
-Install diesel_cli and do: 
-- `diesel setup` -> that will create the file `test.db`
-- `diesel migration run`
+diesel setup will now be run automatically upon startup
+the database will be stored in a file called `test.db`
 
 After that run the application: 
 `cargo run `
