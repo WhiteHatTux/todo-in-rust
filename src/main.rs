@@ -14,6 +14,7 @@ use tide::security::{CorsMiddleware, Origin};
 use tide::{Body, Error, Request, Response};
 use uuid::Uuid;
 
+use std::process::exit;
 use todo_in_rust_with_tide::models::Todo;
 use todo_in_rust_with_tide::schema::todos::dsl::todos;
 
@@ -36,6 +37,11 @@ struct State {
 embed_migrations!();
 #[async_std::main]
 async fn main() -> tide::Result<()> {
+    ctrlc::set_handler(move || {
+        println!("Received Signal Ctrl+c");
+        exit(0);
+    })
+    .expect("Error setting Ctrl-C handler");
     let (pool, state) = set_up_connection_pool_and_state();
 
     let migration_result = embedded_migrations::run(&pool.clone().get().unwrap());
