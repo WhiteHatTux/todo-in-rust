@@ -31,3 +31,4 @@ This list is way too long to include everything, but on the close roadmap (no pr
 - improve error handler to tide
 - add "present" to the db to mark if a task needs to be presented to be considered done (some leftovers are already in the api for put)
 - use temp dir for database file
+- create docker container to build and run
