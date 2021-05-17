@@ -3,5 +3,6 @@ table! {
         id -> Text,
         title -> Nullable<Text>,
         content -> Nullable<Text>,
+        done -> Bool,
     }
 }

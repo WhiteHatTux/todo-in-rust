@@ -3,6 +3,7 @@ extern crate diesel;
 extern crate diesel_migrations;
 
 use std::env;
+use std::process::exit;
 
 use diesel::prelude::*;
 use diesel::r2d2::{ConnectionManager, Pool, PooledConnection};
@@ -14,13 +15,17 @@ use tide::security::{CorsMiddleware, Origin};
 use tide::{Body, Error, Request, Response};
 use uuid::Uuid;
 
-use std::process::exit;
 use todo_in_rust_with_tide::models::Todo;
 use todo_in_rust_with_tide::schema::todos::dsl::todos;
 
 #[derive(Debug, Serialize)]
 struct Todolist {
     todos: Vec<Todo>,
+}
+
+#[derive(Deserialize)]
+struct Done {
+    done: bool,
 }
 
 #[derive(Deserialize)]
@@ -49,6 +54,7 @@ async fn main() -> tide::Result<()> {
     let mut app = tide::with_state(state);
     app.at("/todo").post(add_todo);
     app.at("/todo/:uuid").get(get_todo);
+    app.at("/todo/:uuid").post(update_todo);
     app.at("/todos").get(get_all_todos);
     // Missing error handling if anything fails during the processing
     dotenv().ok();
@@ -131,6 +137,29 @@ async fn get_todo(req: Request<State>) -> tide::Result {
     .into())
 }
 
+async fn update_todo(mut req: Request<State>) -> tide::Result {
+    let todo_uuid = match req.param("uuid") {
+        Ok(uuid_str) => match Uuid::parse_str(uuid_str) {
+            Ok(uuid) => uuid,
+            Err(_) => return print_and_get_error_message("uuid could not be parsed".to_owned()),
+        },
+        Err(_) => return print_and_get_error_message("missing uuid path variable".to_owned()),
+    };
+
+    let Done { done } = match req.body_json().await {
+        Ok(result) => result,
+        Err(error) => return print_and_get_error_message(error.to_string()),
+    };
+
+    let conn = get_connection_from_state(req);
+    let updated_post = diesel::update(todos.find(todo_uuid.to_string()))
+        .set(todo_in_rust_with_tide::schema::todos::done.eq(done))
+        .execute(&conn)
+        .expect(&format!("Unable to find post {}", todo_uuid));
+
+    Ok(format!("{} posts where updated\n", updated_post).into())
+}
+
 async fn add_todo(mut req: Request<State>) -> tide::Result {
     use todo_in_rust_with_tide::schema::todos;
     let NewRequestTodo { title, content } = match req.body_json().await {
@@ -144,6 +173,7 @@ async fn add_todo(mut req: Request<State>) -> tide::Result {
         id: new_uuid_for_todo.to_string(),
         title: Option::from(title),
         content: Option::from(content),
+        done: false,
     };
 
     match diesel::insert_into(todos::table)

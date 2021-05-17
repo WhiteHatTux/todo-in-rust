@@ -8,4 +8,5 @@ pub struct Todo {
     pub id: String,
     pub title: Option<String>,
     pub content: Option<String>,
+    pub done: bool,
 }
