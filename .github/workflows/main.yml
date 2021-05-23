@@ -45,6 +45,6 @@ jobs:
         id: docker_build
         uses: docker/build-push-action@v2
         with:
+          file: Dockerfile.armv7
           push: true
           tags: whitehattux/todo-in-rust-be:latest-arm
-        run: docker build -f Dockerfile.armv7 -t todo-in-rust-be .
