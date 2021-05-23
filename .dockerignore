@@ -1,2 +1,4 @@
 # we ignore the target directory, because it is huge and the deps should be built by `docker build` anyways
 target/
+!target/release
+!target/armv7-unknown-linux-gnueabihf/release
