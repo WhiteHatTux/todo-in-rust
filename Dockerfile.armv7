@@ -1,4 +1,0 @@
-FROM arm32v7/debian:buster-slim
-
-ADD target/armv7-unknown-linux-gnueabihf/release/todo-in-rust-with-tide /app/todo-in-rust
-CMD ["/app/todo-in-rust"]
