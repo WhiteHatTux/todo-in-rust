@@ -5,6 +5,7 @@ extern crate diesel_migrations;
 use std::env;
 use std::process::exit;
 
+use cronjob::CronJob;
 use diesel::prelude::*;
 use diesel::r2d2::{ConnectionManager, Pool, PooledConnection};
 use diesel_migrations::embed_migrations;
@@ -15,6 +16,7 @@ use tide::security::{CorsMiddleware, Origin};
 use tide::{Body, Error, Request, Response};
 use uuid::Uuid;
 
+use todo_in_rust_with_tide::establish_connection;
 use todo_in_rust_with_tide::models::Todo;
 use todo_in_rust_with_tide::schema::todos::dsl::todos;
 
@@ -47,6 +49,12 @@ async fn main() -> tide::Result<()> {
         exit(0);
     })
     .expect("Error setting Ctrl-C handler");
+
+    let mut cron = CronJob::new("reset done", reset_done_tasks);
+    cron.hours("2");
+    cron.offset(-5);
+    CronJob::start_job_threaded(cron);
+
     let (pool, state) = set_up_connection_pool_and_state();
 
     let migration_result = embedded_migrations::run(&pool.clone().get().unwrap());
@@ -71,6 +79,20 @@ async fn main() -> tide::Result<()> {
     )
     .await?;
     Ok(())
+}
+
+fn reset_done_tasks(_: &str) {
+    // i'd love to use r2d2 here, but I haven't yet figured out how I could pass the connection pool
+    // into this message
+    let conn = establish_connection();
+    println!("reset all todos for them to be done again tomorrow");
+    match diesel::update(todos)
+        .set(todo_in_rust_with_tide::schema::todos::done.eq(false))
+        .execute(&conn)
+    {
+        Ok(_) => println!("diesel update successful"),
+        Err(e) => println!("diesel update failed with error {}", e),
+    };
 }
 
 fn set_up_connection_pool_and_state() -> (Pool<ConnectionManager<SqliteConnection>>, State) {
