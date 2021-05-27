@@ -52,6 +52,7 @@ async fn main() -> tide::Result<()> {
 
     let mut cron = CronJob::new("reset done", reset_done_tasks);
     cron.hours("2");
+    cron.minutes("5");
     cron.offset(-5);
     CronJob::start_job_threaded(cron);
 
@@ -85,7 +86,7 @@ fn reset_done_tasks(_: &str) {
     // i'd love to use r2d2 here, but I haven't yet figured out how I could pass the connection pool
     // into this message
     let conn = establish_connection();
-    println!("reset all todos for them to be done again tomorrow");
+    println!("{}: reset all todos for them to be done again tomorrow", chrono::Local::now().to_rfc3339());
     match diesel::update(todos)
         .set(todo_in_rust_with_tide::schema::todos::done.eq(false))
         .execute(&conn)
